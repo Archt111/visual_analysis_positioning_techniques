@@ -56,7 +56,7 @@ class Results_for_experiment:
             self.pos[m] = {}
 
         for result, d in zip(results, data):
-            time += result["time"]
+            time[m] += result["time"]
             self.error[m][d] = result["error"]
             self.pos[m][d] = result["position"]
 
@@ -128,7 +128,17 @@ def generate_statistics(res_obj):
 
     columns = ["Mode", "Min E", "Min N", "Min U", "Max E", "Max N", "Max U", "SD E", "SD N", "SD U", "Mean E", "Mean N", "Mean U", 
                "Median E", "Median N", "Median U", "RMSE 2D", "RMSE 3D", "% Error < 200m", "Mean Runtime (s)"]
-    return pd.DataFrame(stats, columns=columns)
+    
+    df = pd.DataFrame(stats, columns=columns)
+    format_map = {"% Error < 200m": "{:.0f}%",  "Mean Runtime (s)": "{:.2f}",}
+
+    for metric in columns[1:-2]:
+            format_map[metric] = "{:.2e}"
+        # Formatting outputs for readibility
+        # df.style.format(format_map) for newer panda ver
+    for key, value in format_map.items():
+        df[key] = df[key].apply(value.format)
+    return df
 
 # # Adjust global pandas display settings (optional)
 # pd.set_option('display.max_columns', None)  # Show all columns
@@ -142,15 +152,14 @@ def statistics(df, whattoshow="all"):
     else:
         columns_to_show = ["Mode"] + [col for col in df_stats.columns if whattoshow.lower() in col.lower()]
         df_stats = df[columns_to_show]
-    
 
-    def formatting(val):
-        if isinstance(val, str):  
-            return val
-        if "Error < 200m" in val:  
-            return f"{val:.0f}%"
-        return f"{val:.2e}"
-    df_stats.style.format(formatting)
+    # def formatting(val):
+    #     if isinstance(val, str):  
+    #         return val
+    #     if "Error < 200m" in val:  
+    #         return f"{val:.0f}%"
+    #     return f"{val:.2e}"
+    # df_stats.style.format(formatting)
     return df_stats
 
 
@@ -212,7 +221,7 @@ def plot_EN(res_obj, many,figsize=8):
     fig.tight_layout()
     axs.yaxis.set_major_formatter('{x:.0f}')
     axs.xaxis.set_major_formatter('{x:.0f}')
-
+    axs.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2), fancybox=True, shadow=True, ncol=6)
 def get_geopos(res_obj, scenario, reference):
     """
     Returns the positions as longtitudes and latitudes.
